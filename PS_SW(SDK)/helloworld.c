@@ -15,35 +15,29 @@
 #include "string.h"
 #include "xil_cache.h"
 
-#define CMD_DONE_ADDRESS 					0x43C80000
-#define CMD_ADDRESS 							0x43C80004
+#define CMD_DONE_ADDRESS 				0x43C80000
+#define CMD_ADDRESS 					0x43C80004
 #define DATA_ADDRESS_REGNUM				0x43C80008
 #define DATA_ADDRESS_BITNUM				0x43C8000C
 // #define PROGRAM_COUNTER_ADDRESS		0x43C8001C
 #define RESET_FLAG_ADDRESS				0x17FFFFF0
-#define STATE_LOCK_CMD_ADDRESS    0x43c8001c
+#define STATE_LOCK_CMD_ADDRESS    		0x43c8001c
 
 // ===================================================
 // Change This Area
 // ===================================================
-#define ARIANE_TEXT_ADDRESS						0x200000
-//#define ARIANE_TEXT_SIZE							0xed96
-#define ARIANE_TEXT_SIZE							0xea48
+#define ARIANE_TEXT_ADDRESS				0x200000
+#define ARIANE_TEXT_SIZE				0xea48
 
-//#define ARIANE_RODATA_STR1_8_ADDRESS	0x20F7c0
-//#define ARIANE_RODATA_STR1_8_SIZE			0x400
 #define ARIANE_RODATA_STR1_8_ADDRESS	0x20F470
-#define ARIANE_RODATA_STR1_8_SIZE			0x348
+#define ARIANE_RODATA_STR1_8_SIZE		0x350
 
-//#define BSS_ADDRESS										0x20fbc0
-//#define BSS_SIZE											0x648
-#define BSS_ADDRESS										0x20f7b8
-#define BSS_SIZE											0x648
 
-//#define ARIANE_RODATA_ADDRESS					0x20ed98
-//#define ARIANE_RODATA_SIZE						0xA24
-#define ARIANE_RODATA_ADDRESS					0x20ea48
-#define ARIANE_RODATA_SIZE						0xA24
+#define BSS_ADDRESS						0x20f7c0
+#define BSS_SIZE						0x648
+
+#define ARIANE_RODATA_ADDRESS			0x20ea48
+#define ARIANE_RODATA_SIZE				0xA24
 
 //====================================================
 // NO TOUCH HERE
@@ -154,20 +148,18 @@ int main()
 
 	printf("%lu",(void*)Xil_In32(RESET_FLAG_ADDRESS));
 	printf("\r\n");
+// test code
+	// if(Xil_In32(RESET_FLAG_ADDRESS) != 85465)
+	// {
+	// 	mem_migration();
+	// 	printf("mem_migration done\r\n");
 
-	if(Xil_In32(RESET_FLAG_ADDRESS) != 85465)
-	{
-		mem_migration();
-		printf("mem_migration done\r\n");
-
-	}else if(Xil_In32(RESET_FLAG_ADDRESS) == 85465)
-	{
-		Xil_Out32(RESET_FLAG_ADDRESS,0);
-		mem_recovery();
-		printf("mem_recovery done\r\n");
-	}
-		Xil_Out32(STATE_LOCK_CMD_ADDRESS, 0x1); // lock the state to idle
+	// }else if(Xil_In32(RESET_FLAG_ADDRESS) == 85465)
+	// {
+	// 	Xil_Out32(RESET_FLAG_ADDRESS,0);
+	// 	mem_recovery();
+	// 	printf("mem_recovery done\r\n");
+	// }
 		fpga_reset();
-		Xil_Out32(STATE_LOCK_CMD_ADDRESS, 0x0); // unlock the state
     return 0;
 }
