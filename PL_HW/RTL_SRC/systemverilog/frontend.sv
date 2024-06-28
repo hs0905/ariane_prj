@@ -251,35 +251,15 @@ module frontend import ariane_pkg::*; #(
     assign btb_update.pc    = resolved_branch_i.pc;
     assign btb_update.target_address = resolved_branch_i.target_address;
 
-    // -------------------
-    // Next PC
-    // -------------------
-    // next PC (NPC) can come from (in order of precedence):
-    // 0. Default assignment/replay instruction
-    // 1. Branch Predict taken
-    // 2. Control flow change request (misprediction)
-    // 3. Return from environment call
-    // 4. Exception/Interrupt
-    // 5. Pipeline Flush because of CSR side effects
-    // Mis-predict handling is a little bit different
-    // select PC a.k.a PC Gen
     always_comb begin : npc_select
       automatic logic [riscv::VLEN-1:0] fetch_address;
-      // check whether we come out of reset
-      // this is a workaround. some tools have issues
-      // having boot_addr_i in the asynchronous
-      // reset assignment to npc_q, even though
-      // boot_addr_i will be assigned a constant
-      // on the top-level.
       if (npc_rst_load_q) begin
         npc_d         = boot_addr_i;
         fetch_address = boot_addr_i;
       end else begin
         fetch_address    = npc_q;
-        // keep stable by default
         npc_d            = npc_q;
       end
-      // 0. Branch Prediction
       if (bp_valid) begin
         fetch_address = predict_address;
         npc_d = predict_address;

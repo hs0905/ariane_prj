@@ -27,9 +27,9 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
     output ariane_axi::req_t                            axi_data_o,
     input  ariane_axi::resp_t                           axi_data_i,
 
-    input  logic [NR_PORTS-1:0][55:0]                   mshr_addr_i,            // miss가 발생한 주소
-    output logic [NR_PORTS-1:0]                         mshr_addr_matches_o,    // miss가 발생한 주소와 mshr의 주소가 일치하는지
-    output logic [NR_PORTS-1:0]                         mshr_index_matches_o,   // miss가 발생한 주소의 index와 mshr의 index가 일치하는지
+    input  logic [NR_PORTS-1:0][55:0]                   mshr_addr_i,            // miss? ??? ??
+    output logic [NR_PORTS-1:0]                         mshr_addr_matches_o,    // miss? ??? ??? mshr? ??? ?????
+    output logic [NR_PORTS-1:0]                         mshr_index_matches_o,   // miss? ??? ??? index? mshr? index? ?????
     // AMO
     input  amo_req_t                                    amo_req_i,
     output amo_resp_t                                   amo_resp_o,
@@ -39,9 +39,7 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
     output cache_line_t                                 data_o,
     output cl_be_t                                      be_o,
     input  cache_line_t [DCACHE_SET_ASSOC-1:0]          data_i,
-    output logic                                        we_o,
-    // output logic                                        state_idle_pin
-    input logic state_lock_cmd_i
+    output logic                                        we_o
 );
 
     // FSM states
@@ -62,14 +60,6 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
         AMO_SAVE_LOAD,      // D
         AMO_STORE           // E
     } state_d, state_q;
-
-    ila_misshandler ila_misshandler_inst(
-        .clk    (clk_i),
-        .probe0 (rst_ni),
-        .probe1 (state_d),
-        .probe2 (state_q)
-    );
-    
 
     // Registers
     mshr_t                                  mshr_d, mshr_q;                 // state of the MSHR
@@ -238,14 +228,14 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
                 req_fsm_miss_addr   = mshr_q.addr;                  // set the address to the address in MSHR
                 if (gnt_miss_fsm) begin                             // if the request is granted
                     state_d = SAVE_CACHELINE;                       // go to SAVE_CACHELINE state
-                    miss_gnt_o[mshr_q.id] = 1'b1;                   // 해당 ID의 miss 요청이 완료되었음을 알림
+                    miss_gnt_o[mshr_q.id] = 1'b1;                   // ?? ID? miss ??? ?????? ??
                 end
             end
        
             SAVE_CACHELINE: begin                
                 automatic logic [$clog2(DCACHE_LINE_WIDTH)-1:0] cl_offset;
                 cl_offset = mshr_q.addr[DCACHE_BYTE_OFFSET-1:3] << 6;   // set cache line offset as the lower 6 bits of the address
-                if (valid_miss_fsm) begin                               // 메모리에서 캐시라인을 성공적으로 load했을 때
+                if (valid_miss_fsm) begin                               // ????? ????? ????? load?? ?
                     addr_o       = mshr_q.addr[DCACHE_INDEX_WIDTH-1:0]; 
                     req_o        = evict_way_q;
                     we_o         = 1'b1;
@@ -257,7 +247,7 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
                     data_o.dirty = 1'b0;
                     if (mshr_q.we) begin                            // cache line write request
                         for (int i = 0; i < 8; i++) begin           
-                            if (mshr_q.be[i])                       // byte enable이 활성화되어 있을 때
+                            if (mshr_q.be[i])                       // byte enable? ????? ?? ?
                                 data_o.data[(cl_offset + i*8) +: 8] = mshr_q.wdata[i]; // write data to the cache line
                         end
                         data_o.dirty = 1'b1;                        // set the cache line as dirty
@@ -270,18 +260,18 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
             // ------------------------------
             // Write Back Operation
             // ------------------------------
-            WB_CACHELINE_FLUSH, WB_CACHELINE_MISS: begin // 캐시라인을 flush(초기화) 또는 miss로 인해 cache에 쓰기 작업이 필요할 때(메모리에 해당 캐시의 데이터를 write back 하기 위해)
+            WB_CACHELINE_FLUSH, WB_CACHELINE_MISS: begin // ????? flush(???) ?? miss? ?? cache? ?? ??? ??? ?(???? ?? ??? ???? write back ?? ??)
 
-                req_fsm_miss_valid  = 1'b1;             // 메모리로 데이터를 쓰기 위한 요청을 유효하게 설정
-                req_fsm_miss_addr   = {evict_cl_q.tag, cnt_q[DCACHE_INDEX_WIDTH-1:DCACHE_BYTE_OFFSET], {{DCACHE_BYTE_OFFSET}{1'b0}}}; // 쓰기를 수행할 메모리 주소를 설정
-                req_fsm_miss_be     = '1;               // 바이트 활성화 신호로, 쓰기 작업이 필요한 모든 바이트를 활성화
-                req_fsm_miss_we     = 1'b1;             // 쓰기 활성화 신호로, 데이터 쓰기를 활성화
-                req_fsm_miss_wdata  = evict_cl_q.data;  //  메모리로 다시 쓸 데이터, evict 대상의 데이터
+                req_fsm_miss_valid  = 1'b1;             // ???? ???? ?? ?? ??? ???? ??
+                req_fsm_miss_addr   = {evict_cl_q.tag, cnt_q[DCACHE_INDEX_WIDTH-1:DCACHE_BYTE_OFFSET], {{DCACHE_BYTE_OFFSET}{1'b0}}}; // ??? ??? ??? ??? ??
+                req_fsm_miss_be     = '1;               // ??? ??? ???, ?? ??? ??? ?? ???? ???
+                req_fsm_miss_we     = 1'b1;             // ?? ??? ???, ??? ??? ???
+                req_fsm_miss_wdata  = evict_cl_q.data;  //  ???? ?? ? ???, evict ??? ???
 
-                if (gnt_miss_fsm) begin                                 // 메모리 접근을 위한 승인 신호가 활성화
-                    addr_o     = cnt_q;                                 // 캐시 라인의 주소를 설정
-                    req_o      = 1'b1;                                  // 캐시 라인 요청을 활성화
-                    we_o       = 1'b1;                                  // 쓰기 활성화 신호를 활성화
+                if (gnt_miss_fsm) begin                                 // ??? ??? ?? ?? ??? ???
+                    addr_o     = cnt_q;                                 // ?? ??? ??? ??
+                    req_o      = 1'b1;                                  // ?? ?? ??? ???
+                    we_o       = 1'b1;                                  // ?? ??? ??? ???
                     data_o.valid = INVALIDATE_ON_FLUSH ? 1'b0 : 1'b1;   
 
                     be_o.vldrty = evict_way_q; 
@@ -519,8 +509,7 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
     axi_adapter #(
         .DATA_WIDTH            ( 64                 ),
         .AXI_ID_WIDTH          ( 4                  ),
-        .CACHELINE_BYTE_OFFSET ( DCACHE_BYTE_OFFSET ),
-        .ILA_ENABLE            ( "inst1"               )
+        .CACHELINE_BYTE_OFFSET ( DCACHE_BYTE_OFFSET )
     ) i_bypass_axi_adapter (
         .clk_i,
         .rst_ni,
@@ -540,9 +529,7 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
         .critical_word_o       (                        ), // not used for single requests
         .critical_word_valid_o (                        ), // not used for single requests
         .axi_req_o             ( axi_bypass_o           ),
-        .axi_resp_i            ( axi_bypass_i           ),
-        // .state_idle_pin        ( state_idle_pin         )
-        .state_lock_cmd_i      ( state_lock_cmd_i       )
+        .axi_resp_i            ( axi_bypass_i           )
     );
 
     // ----------------------
@@ -551,8 +538,7 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
     axi_adapter  #(
         .DATA_WIDTH            ( DCACHE_LINE_WIDTH  ),
         .AXI_ID_WIDTH          ( 4                  ),
-        .CACHELINE_BYTE_OFFSET ( DCACHE_BYTE_OFFSET ),
-        .ILA_ENABLE            ( "inst2"               )
+        .CACHELINE_BYTE_OFFSET ( DCACHE_BYTE_OFFSET )
     ) i_miss_axi_adapter (
         .clk_i,
         .rst_ni,
@@ -573,7 +559,6 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
         .critical_word_valid_o (critical_word_valid_o),
         .axi_req_o           ( axi_data_o         ),
         .axi_resp_i          ( axi_data_i         )
-    //  .state_lock_cmd_i(state_lock_cmd_i)
     );
 
     // -----------------

@@ -29,25 +29,15 @@ module axi_adapter #(
   output logic                                                      critical_word_valid_o,
   // AXI port
   output ariane_axi::req_t                                          axi_req_o,
-  input  ariane_axi::resp_t                                         axi_resp_i,
-
-  // output                                                            state_idle_pin,
-  input logic                                                       state_lock_cmd_i // 0 : unlock, 1 : lock
+  input  ariane_axi::resp_t                                         axi_resp_i
 );
   localparam TIMEOUT_SEC= 1000;
   localparam BURST_SIZE = DATA_WIDTH/riscv::XLEN-1;
-  localparam ADDR_INDEX = ($clog2(DATA_WIDTH/riscv::XLEN) > 0) ? $clog2(DATA_WIDTH/riscv::XLEN) : 1; // 
+  localparam ADDR_INDEX = ($clog2(DATA_WIDTH/riscv::XLEN) > 0) ? $clog2(DATA_WIDTH/riscv::XLEN) : 1;
 
   enum logic [3:0] {
-    IDLE,                       // 0
-    WAIT_B_VALID,               // 1 
-    WAIT_AW_READY,              // 2
-    WAIT_LAST_W_READY,          // 3
-    WAIT_LAST_W_READY_AW_READY, // 4
-    WAIT_AW_READY_BURST,        // 5
-    WAIT_R_VALID,               // 6
-    WAIT_R_VALID_MULTIPLE,      // 7
-    COMPLETE_READ               // 8
+    IDLE, WAIT_B_VALID, WAIT_AW_READY, WAIT_LAST_W_READY, WAIT_LAST_W_READY_AW_READY, WAIT_AW_READY_BURST,
+    WAIT_R_VALID, WAIT_R_VALID_MULTIPLE, COMPLETE_READ
   } state_q, state_d;
 
   // counter for AXI transfers
@@ -113,11 +103,7 @@ module axi_adapter #(
     id_d          = id_q;
     index         = '0;
 
-  if(state_lock_cmd_i == 1'b1) begin
-    state_d = IDLE;
-  end else begin
     case (state_q)
-
       IDLE: begin
         cnt_d = '0;
         if (req_i) begin                                            // we have an incoming request
@@ -308,9 +294,7 @@ module axi_adapter #(
       end
     endcase
   end
-end
 
-// assign state_idle_pin = (state_q == IDLE);
 
   always_ff @(posedge clk_i or negedge rst_ni) begin
     if (!rst_ni) begin
@@ -328,30 +312,6 @@ end
       id_q          <= id_d;
     end
   end
-if (ILA_ENABLE == "inst1") begin
-  ila_axi_adapter ila_axi_adapter_inst1(
-    .clk(clk_i),
-    .probe0(rst_ni),
-    .probe1(state_lock_cmd_i),
-    .probe2(state_q),
-    .probe3(state_d),
-    .probe4(0),
-    .probe5(0),
-    .probe6(0),
-    .probe7(0)
-  );
-end else if(ILA_ENABLE == "inst2") begin
-  ila_axi_adapter ila_axi_adapter_inst2(
-    .clk(clk_i),
-    .probe0(rst_ni),
-    .probe1(state_lock_cmd_i),
-    .probe2(state_q),
-    .probe3(state_d),
-    .probe4(0),
-    .probe5(0),
-    .probe6(0),
-    .probe7(0)
-  );
-end
 
-endmodule
+
+endmodule//axi_adapt

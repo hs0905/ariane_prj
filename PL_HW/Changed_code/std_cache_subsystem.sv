@@ -6,7 +6,7 @@ import std_cache_pkg::*;
     input logic                            clk_i,
     input logic                            rst_ni,
     // input logic                            io_switch,
-    input riscv::priv_lvl_t                priv_lvl_i,          // RISC-V privilege level(권한 수준)
+    input riscv::priv_lvl_t                priv_lvl_i,          // RISC-V privilege level(?? ??)
     // Instruction cache
     input  logic                           icache_en_i,         // Instruction cache enable
     input  logic                           icache_flush_i,      // Instruction cache flush
@@ -32,10 +32,7 @@ import std_cache_pkg::*;
     output dcache_req_o_t   [2:0]          dcache_req_ports_o,  // Data cache request ports output
     // memory side
     output ariane_axi::req_t               axi_req_o,           // AXI request output(cashe  system -> memory system)
-    input  ariane_axi::resp_t              axi_resp_i,           // AXI response input(memory system -> cache  system)
-
-    // output logic                            state_idle_pin
-    input logic     state_lock_cmd_i
+    input  ariane_axi::resp_t              axi_resp_i           // AXI response input(memory system -> cache  system)
 );
 
   assign wbuffer_empty_o = 1'b1;                                // write buffer is always empty
@@ -47,6 +44,16 @@ import std_cache_pkg::*;
     ariane_axi::resp_t axi_resp_bypass;                         // AXI response for bypass
     ariane_axi::req_t  axi_req_data;                            // AXI request for data cache
     ariane_axi::resp_t axi_resp_data;                           // AXI response for data cache
+
+    // ila_reg ila_ariane_icache_req(
+    //     .clk(clk_i),
+    //     .probe0(0),
+    //     .probe1({axi_req_icache.ar, axi_req_bypass.ar, axi_req_data.ar,axi_req_icache.ar_valid, axi_req_bypass.ar_valid, axi_req_data.ar_valid,axi_resp_icache.ar_ready, axi_resp_bypass.ar_ready, axi_resp_data.ar_ready,axi_req_o.ar_valid,axi_resp_i.ar_ready}),
+    //     .probe2({axi_req_icache.aw, axi_req_bypass.aw, axi_req_data.aw,axi_req_icache.aw_valid, axi_req_bypass.aw_valid, axi_req_data.aw_valid,axi_resp_icache.aw_ready, axi_resp_bypass.aw_ready, axi_resp_data.aw_ready,axi_req_o.aw_valid,axi_resp_i.aw_ready}),
+    //     .probe3({axi_req_o.ar,rst_ni}),
+    //     .probe4(axi_req_o.aw)
+    // );
+
 
     cva6_icache_axi_wrapper #( // AXI intf for the instruction cache
         .ArianeCfg  ( ArianeCfg             )
@@ -85,10 +92,8 @@ import std_cache_pkg::*;
       .req_ports_i  ( dcache_req_ports_i     ),
       .req_ports_o  ( dcache_req_ports_o     ),
       .amo_req_i, 
-      .amo_resp_o,
-    //   .state_idle_pin( state_idle_pin       )
-    .state_lock_cmd_i( state_lock_cmd_i )
-   );
+      .amo_resp_o
+         );
 
     // -----------------------
     // Arbitrate AXI Ports

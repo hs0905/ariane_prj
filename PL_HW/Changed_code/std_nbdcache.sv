@@ -18,16 +18,13 @@ module std_nbdcache import std_cache_pkg::*; import ariane_pkg::*; #(
     output ariane_axi::req_t               axi_data_o,  // AXI request
     input  ariane_axi::resp_t              axi_data_i,  // AXI response
     output ariane_axi::req_t               axi_bypass_o,// AXI bypass request
-    input  ariane_axi::resp_t              axi_bypass_i, // AXI bypass response
-
-    // output logic                           state_idle_pin
-    input logic state_lock_cmd_i
+    input  ariane_axi::resp_t              axi_bypass_i // AXI bypass response
 );
 
 // main component
-// 1. Miss handler      : 캐시 미스를 관리하고 메모리 시스템으로부터 데이터를 리필합니다.
-// 2. cache controller  : 캐시 동작을 제어하고, 캐시 라인의 유효성 및 데이터를 관리합니다.
-// 3. SRAM blocks       : 실제 데이터와 태그를 저장하는 SRAM입니다. 데이터 블록과 태그 블록으로 구분됩니다.
+// 1. Miss handler      : ?? ??? ???? ??? ??????? ???? ?????.
+// 2. cache controller  : ?? ??? ????, ?? ??? ??? ? ???? ?????.
+// 3. SRAM blocks       : ?? ???? ??? ???? SRAM???. ??? ??? ?? ???? ?????.
 
 import std_cache_pkg::*;
 
@@ -121,7 +118,7 @@ import std_cache_pkg::*;
     // ------------------
     // Miss Handling Unit
     // ------------------
-    // Miss handling unit은 캐시 미스를 관리하고, 메모리 시스템으로부터 데이터를 리필합니다.
+    // Miss handling unit? ?? ??? ????, ??? ??????? ???? ?????.
     miss_handler #(
         .NR_PORTS               ( 3                    )
     ) i_miss_handler (
@@ -147,8 +144,6 @@ import std_cache_pkg::*;
         .be_o                   ( be              [0]  ),
         .data_o                 ( wdata           [0]  ),
         .we_o                   ( we              [0]  ),
-        // .state_idle_pin         ( state_idle_pin       ),
-        .state_lock_cmd_i       ( state_lock_cmd_i     ),
         .axi_bypass_o,
         .axi_bypass_i,
         .axi_data_o,

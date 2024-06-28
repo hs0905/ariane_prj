@@ -13,10 +13,8 @@ module AXI_reg_intf( // AXI lite slave interface
     output  logic[AXI_LITE_ARG_NUM-1:0][AXI_LITE_WORD_WIDTH-1:0]	kernel_engine_arg,
 
     output logic                                                  Inner_counter_reset,
-    output logic                                                  Inner_counter_start,
-    // output logic                                                  HP_AXI_reset
-    // input logic                                                   state_idle_pin
-    output logic                                                  state_lock_cmd_o
+    output logic                                                  Inner_counter_start
+    // output logic                                                  state_lock_cmd_o
   );
 
 
@@ -42,7 +40,7 @@ module AXI_reg_intf( // AXI lite slave interface
 
     logic                                                 counter_reset;
     logic                                                 counter_start;
-    logic                                                 state_lock_cmd;
+    // logic                                                 state_lock_cmd;
   } reg_control;
 
   reg_control reg_ctrl, reg_ctrl_next;
@@ -54,6 +52,7 @@ module AXI_reg_intf( // AXI lite slave interface
   localparam COUNTER_RESET_OFFSET   = 32'h14;       // New register offset address
   localparam COUNTER_START_OFFSET   = 32'h18;       // New register offset address
   localparam ARIANE_STATE_OFFSET    = 32'h1C;       // New register offset address
+
   always_comb begin
     reg_ctrl_next = reg_ctrl;
 
@@ -115,8 +114,8 @@ module AXI_reg_intf( // AXI lite slave interface
         reg_ctrl_next.counter_reset = reg_ctrl.write_reg_data;
       end else if(reg_ctrl_next.write_reg_idx == 6)begin
         reg_ctrl_next.counter_start = reg_ctrl.write_reg_data;
-      end else if(reg_ctrl_next.write_reg_idx == 7)begin
-        reg_ctrl_next.state_lock_cmd = reg_ctrl.write_reg_data;
+      // end else if(reg_ctrl_next.write_reg_idx == 7)begin
+      //   reg_ctrl_next.state_lock_cmd = reg_ctrl.write_reg_data;
       end else begin
       reg_ctrl_next.kregs[reg_ctrl.write_reg_idx] = reg_ctrl.write_reg_data;
       end
@@ -157,7 +156,7 @@ module AXI_reg_intf( // AXI lite slave interface
       reg_ctrl.kernel_command_new  <= 0;
       reg_ctrl.counter_reset       <= 0;
       reg_ctrl.counter_start       <= 0;
-      reg_ctrl.state_lock_cmd      <= 0;
+      // reg_ctrl.state_lock_cmd      <= 0;
     end else begin    
       reg_ctrl <= reg_ctrl_next;
     end
@@ -165,5 +164,5 @@ module AXI_reg_intf( // AXI lite slave interface
 
   assign Inner_counter_reset = reg_ctrl.counter_reset;
   assign Inner_counter_start = reg_ctrl.counter_start;
-  assign state_lock_cmd_o    = reg_ctrl.state_lock_cmd;
+  // assign state_lock_cmd_o    = reg_ctrl.state_lock_cmd;
 endmodule

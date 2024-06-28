@@ -41,11 +41,7 @@ module cva6 import ariane_pkg::*; #(
   input  logic                         debug_req_i,  // debug request (async)
   
   input     CommandDataPort            commanddataport,
-  output    StatePort                  stateport,
-
-  // output logic                         state_idle_pin,
-  input logic                          state_lock_cmd_i,
-  
+  output    StatePort                  stateport,  
 `ifdef FIRESIM_TRACE
   // firesim trace port
   output traced_instr_pkg::trace_port_t trace_o,
@@ -728,10 +724,7 @@ module cva6 import ariane_pkg::*; #(
     .dcache_req_ports_o    ( dcache_req_ports_cache_ex   ),
     // memory side
     .axi_req_o             ( axi_req_o                   ),
-    .axi_resp_i            ( axi_resp_i                  ),
-
-    // .state_idle_pin       ( state_idle_pin              )
-    .state_lock_cmd_i       (state_lock_cmd_i)
+    .axi_resp_i            ( axi_resp_i                  )
   );
   assign dcache_commit_wbuffer_not_ni = 1'b1;
 `endif
@@ -977,4 +970,43 @@ module cva6 import ariane_pkg::*; #(
     end
 `endif
 
-endmodule 
+//ila_0 ila_cva6(
+//  .clk(clk_i),
+//  .probe0(fetch_entry_if_id.address),
+//  .probe1(fetch_entry_if_id.instruction),
+//  .probe2({fetch_valid_if_id,irq_i}),
+//  .probe3({commit_instr_id_commit[0].valid, commit_instr_id_commit[1].valid}),
+//  .probe4(irq_ctrl_csr_id.mip),
+//  .probe5(irq_ctrl_csr_id.mie),
+//  .probe6(irq_ctrl_csr_id.mideleg),
+//  .probe7({commit_ack[1] & commit_instr_id_commit[1].ex.valid & ~commit_instr_id_commit[1].ex.cause[63] , commit_ack[1] & commit_instr_id_commit[1].ex.valid & commit_instr_id_commit[1].ex.cause[63],commit_ack[1] & ~commit_instr_id_commit[1].ex.valid}),//exception, interrupt, valid
+//  .probe8(commit_instr_id_commit[0].ex.tval[31:0]),
+//  .probe9(commit_instr_id_commit[1].ex.tval[31:0]),//inst
+//  .probe10(commit_instr_id_commit[0].pc),
+//  .probe11(commit_instr_id_commit[1].pc),//iaddr
+//  .probe12(pc_commit),
+//  .probe13(trap_vector_base_commit_pcgen),
+//  .probe14(issue_entry_id_issue.pc),
+//  .probe15({ex_commit.valid,
+//    commit_instr_id_commit[0].ex.valid, 
+//    commit_ack[0],
+//    commit_instr_id_commit[1].ex.valid, 
+//    commit_ack[1],
+//    irq_ctrl_csr_id.sie,
+//    irq_ctrl_csr_id.global_enable,
+//    priv_lvl,
+//    issue_entry_id_issue.valid,
+//    issue_entry_id_issue.ex.valid})
+//  );
+
+// ila_reg ilacva6_irq_i(
+//   .clk(clk_i),
+//   .probe0(0),
+//   .probe1(irq_i),
+//   .probe2(0),
+//   .probe3(0),
+//   .probe4(0)
+// );
+
+
+endmodule // ariane
