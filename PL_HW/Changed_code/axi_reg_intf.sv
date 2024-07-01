@@ -165,4 +165,15 @@ module AXI_reg_intf( // AXI lite slave interface
   assign Inner_counter_reset = reg_ctrl.counter_reset;
   assign Inner_counter_start = reg_ctrl.counter_start;
   // assign state_lock_cmd_o    = reg_ctrl.state_lock_cmd;
+
+ila_axi_reg ila_axi_reg_inst(
+  .clk(clk),
+  .probe0(rstn),
+  .probe1(AXI_LITE_input), // bit num : 41
+  .probe2(AXI_LITE_output) // bit num : 105
+);
+
+
+
+
 endmodule

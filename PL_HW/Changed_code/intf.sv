@@ -49,7 +49,7 @@ typedef struct packed {
     logic [1:0]rresp;
     logic rvalid;
     logic wready;
-} axi_lite_input;
+} axi_lite_input; // total bit width = 1+1+2+1+32+2+1+1 = 41
     
 typedef struct packed {
     logic [`GP_ADDR_WIDTH-1:0]araddr;
@@ -61,7 +61,7 @@ typedef struct packed {
     logic [`GP_DATA_WIDTH-1:0]wdata;
     logic [`GP_DATA_WIDTH/8-1:0]wstrb;
     logic wvalid;
-} axi_lite_output;
+} axi_lite_output; // total bit width = 32+1+32+1+1+1+32+4+1 = 9 + 96 = 105
 
     
 typedef struct packed {

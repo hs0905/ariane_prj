@@ -1,3 +1,21 @@
+// Copyright 2018 ETH Zurich and University of Bologna.
+// Copyright and related rights are licensed under the Solderpad Hardware
+// License, Version 0.51 (the "License"); you may not use this file except in
+// compliance with the License.  You may obtain a copy of the License at
+// http://solderpad.org/licenses/SHL-0.51. Unless required by applicable law
+// or agreed to in writing, software, hardware and materials distributed under
+// this License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+// CONDITIONS OF ANY KIND, either express or implied. See the License for the
+// specific language governing permissions and limitations under the License.
+//
+// Author: Florian Zaruba, ETH Zurich
+// Date: 12.11.2017
+// Description: Handles cache misses.
+
+// --------------
+// MISS Handler
+// --------------
+
 module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
     parameter int unsigned NR_PORTS         = 3
 )(
@@ -10,7 +28,7 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
     // Bypass or miss
     input  logic [NR_PORTS-1:0][$bits(miss_req_t)-1:0]  miss_req_i,
     // Bypass handling
-    output logic [NR_PORTS-1:0]                         bypass_gnt_o,   // grant to bypass
+    output logic [NR_PORTS-1:0]                         bypass_gnt_o,
     output logic [NR_PORTS-1:0]                         bypass_valid_o,
     output logic [NR_PORTS-1:0][63:0]                   bypass_data_o,
 
@@ -19,7 +37,7 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
     input  ariane_axi::resp_t                           axi_bypass_i,
 
     // Miss handling (~> cacheline refill)
-    output logic [NR_PORTS-1:0]                         miss_gnt_o, 
+    output logic [NR_PORTS-1:0]                         miss_gnt_o,
     output logic [NR_PORTS-1:0]                         active_serving_o,
 
     output logic [63:0]                                 critical_word_o,
@@ -27,9 +45,9 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
     output ariane_axi::req_t                            axi_data_o,
     input  ariane_axi::resp_t                           axi_data_i,
 
-    input  logic [NR_PORTS-1:0][55:0]                   mshr_addr_i,            // miss? ??? ??
-    output logic [NR_PORTS-1:0]                         mshr_addr_matches_o,    // miss? ??? ??? mshr? ??? ?????
-    output logic [NR_PORTS-1:0]                         mshr_index_matches_o,   // miss? ??? ??? index? mshr? index? ?????
+    input  logic [NR_PORTS-1:0][55:0]                   mshr_addr_i,
+    output logic [NR_PORTS-1:0]                         mshr_addr_matches_o,
+    output logic [NR_PORTS-1:0]                         mshr_index_matches_o,
     // AMO
     input  amo_req_t                                    amo_req_i,
     output amo_resp_t                                   amo_resp_o,
@@ -62,13 +80,13 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
     } state_d, state_q;
 
     // Registers
-    mshr_t                                  mshr_d, mshr_q;                 // state of the MSHR
-    logic [DCACHE_INDEX_WIDTH-1:0]          cnt_d, cnt_q;                   // counter for cache line refill
-    logic [DCACHE_SET_ASSOC-1:0]            evict_way_d, evict_way_q;       
+    mshr_t                                  mshr_d, mshr_q;
+    logic [DCACHE_INDEX_WIDTH-1:0]          cnt_d, cnt_q;
+    logic [DCACHE_SET_ASSOC-1:0]            evict_way_d, evict_way_q;
     // cache line to evict
-    cache_line_t                            evict_cl_d, evict_cl_q;         // cache line to evict
+    cache_line_t                            evict_cl_d, evict_cl_q;
 
-    logic serve_amo_d, serve_amo_q;                                         // flag for tracking AMO operations
+    logic serve_amo_d, serve_amo_q;
     // Request from one FSM
     logic [NR_PORTS-1:0]                    miss_req_valid;
     logic [NR_PORTS-1:0]                    miss_req_bypass;
@@ -108,24 +126,24 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
     // Cache Management
     // ------------------------------
     always_comb begin : cache_management
-        automatic logic [DCACHE_SET_ASSOC-1:0] evict_way, valid_way;    // way to evict
+        automatic logic [DCACHE_SET_ASSOC-1:0] evict_way, valid_way;
 
         for (int unsigned i = 0; i < DCACHE_SET_ASSOC; i++) begin
-            evict_way[i] = data_i[i].valid & data_i[i].dirty;           // find dirty cache line
-            valid_way[i] = data_i[i].valid;                             // find valid cache line
+            evict_way[i] = data_i[i].valid & data_i[i].dirty;
+            valid_way[i] = data_i[i].valid;
         end
         // ----------------------
         // Default Assignments
         // ----------------------
         // memory array
-        req_o               = '0;
-        addr_o              = '0;
-        data_o              = '0;
-        be_o                = '0;
-        we_o                = '0;
+        req_o  = '0;
+        addr_o = '0;
+        data_o = '0;
+        be_o   = '0;
+        we_o   = '0;
         // Cache controller
-        miss_gnt_o          = '0;
-        active_serving_o    = '0;
+        miss_gnt_o = '0;
+        active_serving_o = '0;
         // LFSR replacement unit
         lfsr_enable = 1'b0;
         // to AXI refill
@@ -143,100 +161,117 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
         // --------------------------------
         // Flush and Miss operation
         // --------------------------------
-        state_d             = state_q;
-        cnt_d               = cnt_q;
-        evict_way_d         = evict_way_q;
-        evict_cl_d          = evict_cl_q;
-        mshr_d              = mshr_q;
+        state_d      = state_q;
+        cnt_d        = cnt_q;
+        evict_way_d  = evict_way_q;
+        evict_cl_d   = evict_cl_q;
+        mshr_d       = mshr_q;
         // communicate to the requester which unit we are currently serving
-        active_serving_o[mshr_q.id] = mshr_q.valid; //which unit is currently served
+        active_serving_o[mshr_q.id] = mshr_q.valid;
         // AMOs
-        amo_resp_o.ack              = 1'b0;         // acknowledge the request
-        amo_resp_o.result           = '0;           // result of the AMO
+        amo_resp_o.ack = 1'b0;
+        amo_resp_o.result = '0;
         // silence the unit when not used
         amo_op = amo_req_i.amo_op;
         amo_operand_a = '0;
         amo_operand_b = '0;
 
         reservation_d = reservation_q;
-        
-
-        // serve_amo_q & serve_amo_d means that serving an amo operation is in progress
-
         case (state_q)
+
             IDLE: begin
-                if (amo_req_i.req && !busy_i) begin 
-                    if (!serve_amo_q) begin         // AMO operation is not served now 
-                        state_d = FLUSH_REQ_STATUS; // state transition to FLUSH_REQ_STATUS
-                        serve_amo_d = 1'b1;         // set serve_amo_next to 1
-                        cnt_d = '0;                 
+                // lowest priority are AMOs, wait until everything else is served before going for the AMOs
+                if (amo_req_i.req && !busy_i) begin
+                    // 1. Flush the cache
+                    if (!serve_amo_q) begin
+                        state_d = FLUSH_REQ_STATUS;
+                        serve_amo_d = 1'b1;
+                        cnt_d = '0;
+                    // 2. Do the AMO
                     end else begin
-                        state_d = AMO_LOAD;         // go to AMO_LOAD
-                        serve_amo_d = 1'b0;         // reset serve_amo_next
+                        state_d = AMO_LOAD;
+                        serve_amo_d = 1'b0;
                     end
                 end
-                if (flush_i && !busy_i) begin       // flush request input and not busy condition
-                    state_d = FLUSH_REQ_STATUS;     // go to flush request status
-                    cnt_d = '0;                             
+                // check if we want to flush and can flush e.g.: we are not busy anymore
+                // TODO: Check that the busy flag is indeed needed
+                if (flush_i && !busy_i) begin
+                    state_d = FLUSH_REQ_STATUS;
+                    cnt_d = '0;
                 end
 
-                for (int unsigned i = 0; i < NR_PORTS; i++) begin           
-                    if (miss_req_valid[i] && !miss_req_bypass[i]) begin  // miss request valid and not bypass state
-                        state_d      = MISS;                             // go to MISS state   
-                        serve_amo_d  = 1'b0;                             // unset AMO operation
-                        // save the miss request information in the MSHR
-                        mshr_d.valid = 1'b1;                             
+                // check if one of the state machines missed
+                for (int unsigned i = 0; i < NR_PORTS; i++) begin
+                    // here comes the refill portion of code
+                    if (miss_req_valid[i] && !miss_req_bypass[i]) begin
+                        state_d      = MISS;
+                        // we are taking another request so don't take the AMO
+                        serve_amo_d  = 1'b0;
+                        // save to MSHR
+                        mshr_d.valid = 1'b1;
                         mshr_d.we    = miss_req_we[i];
                         mshr_d.id    = i;
-                        mshr_d.addr  = miss_req_addr    [i][DCACHE_TAG_WIDTH+DCACHE_INDEX_WIDTH-1:0];
-                        mshr_d.wdata = miss_req_wdata   [i];
-                        mshr_d.be    = miss_req_be      [i];
+                        mshr_d.addr  = miss_req_addr[i][DCACHE_TAG_WIDTH+DCACHE_INDEX_WIDTH-1:0];
+                        mshr_d.wdata = miss_req_wdata[i];
+                        mshr_d.be    = miss_req_be[i];
                         break;
                     end
                 end
             end
 
-            // first step of the miss handling
-            MISS: begin 
+            //  ~> we missed on the cache
+            MISS: begin
+                // 1. Check if there is an empty cache-line
+                // 2. If not -> evict one
                 req_o = '1;
                 addr_o = mshr_q.addr[DCACHE_INDEX_WIDTH-1:0];
                 state_d = MISS_REPL;
                 miss_o = 1'b1;
             end
 
-            // second step of the miss handling
+            // ~> second miss cycle
             MISS_REPL: begin
-                if (&valid_way) begin                               // all ways are valid(data is full in cache)
-                    lfsr_enable = 1'b1;                             // enable LFSR(random replacement)
-                    evict_way_d = lfsr_oh;                          // get the way to evict
-                    if (data_i[lfsr_bin].dirty) begin               // if the data is dirty(need to write back to memory)
-                        state_d = WB_CACHELINE_MISS;                // go to WB_CACHELINE_MISS
-                        evict_cl_d.tag = data_i[lfsr_bin].tag;      
+                // if all are valid we need to evict one, pseudo random from LFSR
+                if (&valid_way) begin
+                    lfsr_enable = 1'b1;
+                    evict_way_d = lfsr_oh;
+                    // do we need to write back the cache line?
+                    if (data_i[lfsr_bin].dirty) begin
+                        state_d = WB_CACHELINE_MISS;
+                        evict_cl_d.tag = data_i[lfsr_bin].tag;
                         evict_cl_d.data = data_i[lfsr_bin].data;
-                        cnt_d = mshr_q.addr[DCACHE_INDEX_WIDTH-1:0]; // set the counter to the index of the cache line
-                    end else                                         // if the data is not dirty
-                        state_d = REQ_CACHELINE;                     // go to REQ_CACHELINE to get the data from memory
-                end else begin                                       // not all ways are valid
-                    evict_way_d = get_victim_cl(~valid_way);         // return the first unvalid way
-                    state_d = REQ_CACHELINE;                         // go to REQ_CACHELINE to get the data from memory
+                        cnt_d = mshr_q.addr[DCACHE_INDEX_WIDTH-1:0];
+                    // no - we can request a cache line now
+                    end else
+                        state_d = REQ_CACHELINE;
+                // we have at least one free way
+                end else begin
+                    // get victim cache-line by looking for the first non-valid bit
+                    evict_way_d = get_victim_cl(~valid_way);
+                    state_d = REQ_CACHELINE;
                 end
             end
 
-            // request the cacheline from memory
+            // ~> we can just load the cache-line, the way is store in evict_way_q
             REQ_CACHELINE: begin
-                req_fsm_miss_valid  = 1'b1;                         // set miss_valid to 1, request is valid
-                req_fsm_miss_addr   = mshr_q.addr;                  // set the address to the address in MSHR
-                if (gnt_miss_fsm) begin                             // if the request is granted
-                    state_d = SAVE_CACHELINE;                       // go to SAVE_CACHELINE state
-                    miss_gnt_o[mshr_q.id] = 1'b1;                   // ?? ID? miss ??? ?????? ??
+                req_fsm_miss_valid  = 1'b1;
+                req_fsm_miss_addr   = mshr_q.addr;
+
+                if (gnt_miss_fsm) begin
+                    state_d = SAVE_CACHELINE;
+                    miss_gnt_o[mshr_q.id] = 1'b1;
                 end
             end
-       
-            SAVE_CACHELINE: begin                
+
+            // ~> replace the cacheline
+            SAVE_CACHELINE: begin
+                // calculate cacheline offset
                 automatic logic [$clog2(DCACHE_LINE_WIDTH)-1:0] cl_offset;
-                cl_offset = mshr_q.addr[DCACHE_BYTE_OFFSET-1:3] << 6;   // set cache line offset as the lower 6 bits of the address
-                if (valid_miss_fsm) begin                               // ????? ????? ????? load?? ?
-                    addr_o       = mshr_q.addr[DCACHE_INDEX_WIDTH-1:0]; 
+                cl_offset = mshr_q.addr[DCACHE_BYTE_OFFSET-1:3] << 6;
+                // we've got a valid response from refill unit
+                if (valid_miss_fsm) begin
+
+                    addr_o       = mshr_q.addr[DCACHE_INDEX_WIDTH-1:0];
                     req_o        = evict_way_q;
                     we_o         = 1'b1;
                     be_o         = '1;
@@ -245,37 +280,47 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
                     data_o.data  = data_miss_fsm;
                     data_o.valid = 1'b1;
                     data_o.dirty = 1'b0;
-                    if (mshr_q.we) begin                            // cache line write request
-                        for (int i = 0; i < 8; i++) begin           
-                            if (mshr_q.be[i])                       // byte enable? ????? ?? ?
-                                data_o.data[(cl_offset + i*8) +: 8] = mshr_q.wdata[i]; // write data to the cache line
+
+                    // is this a write?
+                    if (mshr_q.we) begin
+                        // Yes, so safe the updated data now
+                        for (int i = 0; i < 8; i++) begin
+                            // check if we really want to write the corresponding byte
+                            if (mshr_q.be[i])
+                                data_o.data[(cl_offset + i*8) +: 8] = mshr_q.wdata[i];
                         end
-                        data_o.dirty = 1'b1;                        // set the cache line as dirty
+                        // its immediately dirty if we write
+                        data_o.dirty = 1'b1;
                     end
-                    mshr_d.valid = 1'b0;                            // set the MSHR as invalid  
-                    state_d      = IDLE;                            // go back to IDLE state
+                    // reset MSHR
+                    mshr_d.valid = 1'b0;
+                    // go back to idle
+                    state_d = IDLE;
                 end
             end
 
             // ------------------------------
             // Write Back Operation
             // ------------------------------
-            WB_CACHELINE_FLUSH, WB_CACHELINE_MISS: begin // ????? flush(???) ?? miss? ?? cache? ?? ??? ??? ?(???? ?? ??? ???? write back ?? ??)
+            // ~> evict a cache line from way saved in evict_way_q
+            WB_CACHELINE_FLUSH, WB_CACHELINE_MISS: begin
 
-                req_fsm_miss_valid  = 1'b1;             // ???? ???? ?? ?? ??? ???? ??
-                req_fsm_miss_addr   = {evict_cl_q.tag, cnt_q[DCACHE_INDEX_WIDTH-1:DCACHE_BYTE_OFFSET], {{DCACHE_BYTE_OFFSET}{1'b0}}}; // ??? ??? ??? ??? ??
-                req_fsm_miss_be     = '1;               // ??? ??? ???, ?? ??? ??? ?? ???? ???
-                req_fsm_miss_we     = 1'b1;             // ?? ??? ???, ??? ??? ???
-                req_fsm_miss_wdata  = evict_cl_q.data;  //  ???? ?? ? ???, evict ??? ???
+                req_fsm_miss_valid  = 1'b1;
+                req_fsm_miss_addr   = {evict_cl_q.tag, cnt_q[DCACHE_INDEX_WIDTH-1:DCACHE_BYTE_OFFSET], {{DCACHE_BYTE_OFFSET}{1'b0}}};
+                req_fsm_miss_be     = '1;
+                req_fsm_miss_we     = 1'b1;
+                req_fsm_miss_wdata  = evict_cl_q.data;
 
-                if (gnt_miss_fsm) begin                                 // ??? ??? ?? ?? ??? ???
-                    addr_o     = cnt_q;                                 // ?? ??? ??? ??
-                    req_o      = 1'b1;                                  // ?? ?? ??? ???
-                    we_o       = 1'b1;                                  // ?? ??? ??? ???
-                    data_o.valid = INVALIDATE_ON_FLUSH ? 1'b0 : 1'b1;   
-
-                    be_o.vldrty = evict_way_q; 
-
+                // we've got a grant --> this is timing critical, think about it
+                if (gnt_miss_fsm) begin
+                    // write status array
+                    addr_o     = cnt_q;
+                    req_o      = 1'b1;
+                    we_o       = 1'b1;
+                    data_o.valid = INVALIDATE_ON_FLUSH ? 1'b0 : 1'b1;
+                    // invalidate
+                    be_o.vldrty = evict_way_q;
+                    // go back to handling the miss or flushing, depending on where we came from
                     state_d = (state_q == WB_CACHELINE_MISS) ? MISS : FLUSH_REQ_STATUS;
                 end
             end
@@ -283,6 +328,7 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
             // ------------------------------
             // Flushing & Initialization
             // ------------------------------
+            // ~> make another request to check the same cache-line if there are still some valid entries
             FLUSH_REQ_STATUS: begin
                 req_o   = '1;
                 addr_o  = cnt_q;
@@ -290,32 +336,41 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
             end
 
             FLUSHING: begin
+                // this has priority
+                // at least one of the cache lines is dirty
                 if (|evict_way) begin
-                    evict_way_d = get_victim_cl(evict_way);             // get the way to evict
-                    evict_cl_d  = data_i[one_hot_to_bin(evict_way)];    // get the one hot value of the way to evict
-                    state_d     = WB_CACHELINE_FLUSH;                   // go to WB_CACHELINE_FLUSH
+                    // evict cache line, look for the first cache-line which is dirty
+                    evict_way_d = get_victim_cl(evict_way);
+                    evict_cl_d  = data_i[one_hot_to_bin(evict_way)];
+                    state_d     = WB_CACHELINE_FLUSH;
+                // not dirty ~> increment and continue
                 end else begin
-                    cnt_d       = cnt_q + (1'b1 << DCACHE_BYTE_OFFSET); // increment the counter
-                    state_d     = FLUSH_REQ_STATUS;                     
+                    // increment and re-request
+                    cnt_d       = cnt_q + (1'b1 << DCACHE_BYTE_OFFSET);
+                    state_d     = FLUSH_REQ_STATUS;
                     addr_o      = cnt_q;
                     req_o       = 1'b1;
                     be_o.vldrty = INVALIDATE_ON_FLUSH ? '1 : '0;
                     we_o        = 1'b1;
+                    // finished with flushing operation, go back to idle
                     if (cnt_q[DCACHE_INDEX_WIDTH-1:DCACHE_BYTE_OFFSET] == DCACHE_NUM_WORDS-1) begin
+                        // only acknowledge if the flush wasn't triggered by an atomic
                         flush_ack_o = ~serve_amo_q;
                         state_d     = IDLE;
                     end
                 end
             end
 
+            // ~> only called after reset
             INIT: begin
+                // initialize status array
                 addr_o = cnt_q;
                 req_o  = 1'b1;
                 we_o   = 1'b1;
-
+                // only write the dirty array
                 be_o.vldrty = '1;
                 cnt_d       = cnt_q + (1'b1 << DCACHE_BYTE_OFFSET);
-
+                // finished initialization
                 if (cnt_q[DCACHE_INDEX_WIDTH-1:DCACHE_BYTE_OFFSET] == DCACHE_NUM_WORDS-1)
                     state_d = IDLE;
             end
@@ -505,11 +560,14 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
         .data_rdata_i   ( data_bypass_fsm                          ),
         .*
     );
+    localparam i_bypass_axi_adapter_id = 0;
+    localparam i_miss_axi_adapter_id = 1;
 
     axi_adapter #(
         .DATA_WIDTH            ( 64                 ),
         .AXI_ID_WIDTH          ( 4                  ),
-        .CACHELINE_BYTE_OFFSET ( DCACHE_BYTE_OFFSET )
+        .CACHELINE_BYTE_OFFSET ( DCACHE_BYTE_OFFSET ),
+        .ILA_ID                (i_bypass_axi_adapter_id)
     ) i_bypass_axi_adapter (
         .clk_i,
         .rst_ni,
@@ -538,7 +596,8 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
     axi_adapter  #(
         .DATA_WIDTH            ( DCACHE_LINE_WIDTH  ),
         .AXI_ID_WIDTH          ( 4                  ),
-        .CACHELINE_BYTE_OFFSET ( DCACHE_BYTE_OFFSET )
+        .CACHELINE_BYTE_OFFSET ( DCACHE_BYTE_OFFSET ),
+        .ILA_ID                (i_miss_axi_adapter_id)
     ) i_miss_axi_adapter (
         .clk_i,
         .rst_ni,
@@ -737,4 +796,4 @@ module arbiter #(
 
     `endif
     //pragma translate_on
-endmodule
+endmodule // miss_handler

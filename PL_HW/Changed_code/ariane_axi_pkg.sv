@@ -94,9 +94,9 @@ package ariane_axi;
         w_chan_t  w;
         logic     w_valid;
         logic     b_ready;
-        ar_chan_t ar;
-        logic     ar_valid;
-        logic     r_ready;
+        ar_chan_t ar;       // 
+        logic     ar_valid; // 1 Bit
+        logic     r_ready;  // 1 Bit
     } req_t;
 
     typedef struct packed {

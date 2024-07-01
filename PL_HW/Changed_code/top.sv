@@ -494,6 +494,7 @@ module top(
     .O_NAND_CH7_RE_P  (O_NAND_CH7_RE_P),
     .O_NAND_CH7_WE    (O_NAND_CH7_WE),
     .O_NAND_CH7_WP    (O_NAND_CH7_WP),
+    // General Purpose AXI(Master)
     .M_AXI_GP1_araddr (M_AXI_GP1_araddr ),
     .M_AXI_GP1_arprot (M_AXI_GP1_arprot ),
     .M_AXI_GP1_arready(M_AXI_GP1_arready),
@@ -513,6 +514,7 @@ module top(
     .M_AXI_GP1_wready (M_AXI_GP1_wready ),
     .M_AXI_GP1_wstrb  (M_AXI_GP1_wstrb  ),
     .M_AXI_GP1_wvalid (M_AXI_GP1_wvalid ),
+    // High Performance AXI(Slave)
     .S_AXI_HP0_araddr (S_AXI_HP0_araddr),
     .S_AXI_HP0_arburst(S_AXI_HP0_arburst),
     .S_AXI_HP0_arcache(S_AXI_HP0_arcache),
@@ -677,7 +679,8 @@ ila_axi_std ila_axi_std_inst(
   .probe1 ({M_AXI_GP1_araddr,M_AXI_GP1_arvalid,M_AXI_GP1_awaddr,M_AXI_GP1_awvalid,
             M_AXI_GP1_bready,M_AXI_GP1_rready,M_AXI_GP1_wstrb,M_AXI_GP1_wvalid}),// 32+1+32+1+1+1+4+1 = 73
   // General Purpose AXI_Signal_Slaves
-  .probe2 ({M_AXI_GP1_arready,M_AXI_GP1_awready,M_AXI_GP1_bresp,M_AXI_GP1_bvali,M_AXI_GP1_rresp,M_AXI_GP1_rvalid,M_AXI_GP1_wready}), // 1+1+1+1+1+1+1 = 7
+  .probe2 ({M_AXI_GP1_arready,M_AXI_GP1_awready,M_AXI_GP1_bresp,M_AXI_GP1_bvalid,
+            M_AXI_GP1_rresp,M_AXI_GP1_rvalid,M_AXI_GP1_wready}), // 9 bit
   // General Purpose AXI_Data_Masters
   .probe3 (M_AXI_GP1_wdata),  // 32
   // General Purpose AXI_Data_Slaves
