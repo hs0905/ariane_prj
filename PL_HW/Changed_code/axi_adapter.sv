@@ -96,12 +96,12 @@ module axi_adapter #(
     critical_word_valid_o = 1'b0;
     rdata_o               = cache_line_q;
 
-    state_d       = state_q;
-    cnt_d         = cnt_q;
-    cache_line_d  = cache_line_q;
-    addr_offset_d = addr_offset_q;
-    id_d          = id_q;
-    index         = '0;
+    state_d               = state_q;
+    cnt_d                 = cnt_q;
+    cache_line_d          = cache_line_q;
+    addr_offset_d         = addr_offset_q;
+    id_d                  = id_q;
+    index                 = '0;
 
     case (state_q)
       IDLE: begin

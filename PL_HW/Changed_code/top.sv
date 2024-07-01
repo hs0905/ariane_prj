@@ -670,7 +670,30 @@ module top(
   assign AXI_LITE_output.wstrb    = M_AXI_GP1_wstrb  ;
   assign AXI_LITE_output.wvalid   = M_AXI_GP1_wvalid ;
 
-
+ila_axi_std ila_axi_std_inst(
+  .clk    (user_clk),
+  .probe0 (user_rstn),
+  // General Purpose AXI_Signal_Masters
+  .probe1 ({M_AXI_GP1_araddr,M_AXI_GP1_arvalid,M_AXI_GP1_awaddr,M_AXI_GP1_awvalid,
+            M_AXI_GP1_bready,M_AXI_GP1_rready,M_AXI_GP1_wstrb,M_AXI_GP1_wvalid}),// 32+1+32+1+1+1+4+1 = 73
+  // General Purpose AXI_Signal_Slaves
+  .probe2 ({M_AXI_GP1_arready,M_AXI_GP1_awready,M_AXI_GP1_bresp,M_AXI_GP1_bvali,M_AXI_GP1_rresp,M_AXI_GP1_rvalid,M_AXI_GP1_wready}), // 1+1+1+1+1+1+1 = 7
+  // General Purpose AXI_Data_Masters
+  .probe3 (M_AXI_GP1_wdata),  // 32
+  // General Purpose AXI_Data_Slaves
+  .probe4 (M_AXI_GP1_rdata),  // 32
+  // High Performance AXI_Signal_Masters
+  .probe5 ({S_AXI_HP0_araddr,S_AXI_HP0_arburst,S_AXI_HP0_arcache,S_AXI_HP0_arlen,
+            S_AXI_HP0_arsize,S_AXI_HP0_arvalid,S_AXI_HP0_awaddr,S_AXI_HP0_awburst,
+            S_AXI_HP0_awlen,S_AXI_HP0_awsize,S_AXI_HP0_awvalid,S_AXI_HP0_bready,
+            S_AXI_HP0_rready,S_AXI_HP0_wlast,S_AXI_HP0_wstrb, S_AXI_HP0_wvalid}), // 32+2+4+8 +3+1+32+2 +8+3+1+1 +1+1+8+1 = 100
+  // High Performance AXI_Signal_Slaves
+  .probe6 ({S_AXI_HP0_arready,S_AXI_HP0_awready,S_AXI_HP0_wready,S_AXI_HP0_bresp,S_AXI_HP0_bvalid}), // 1+1+1+2+1 = 6
+  // High Performance AXI_Data_Masters
+  .probe7 (S_AXI_HP0_wdata), // 64
+  // High Performance AXI_Data_Slaves
+  .probe8 (S_AXI_HP0_rdata) // 64
+);
 
 
 
