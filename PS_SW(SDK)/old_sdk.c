@@ -33,9 +33,9 @@
 #define BSS_SIZE											0x648
 #define ARIANE_RODATA_SIZE						0xa24
 
-#define SPARE_TEXT_ADDRESS						0x17FAFE00
-#define SPARE_RODATA_STR1_8_ADDRESS		0x17FBEBB4
-#define SPARE_RODATA_ADDRESS					0X17FBEFCC
+// #define SPARE_TEXT_ADDRESS						0x17FAFE00
+// #define SPARE_RODATA_STR1_8_ADDRESS		0x17FBEBB4
+// #define SPARE_RODATA_ADDRESS					0X17FBEFCC
 
 
 #define HOST_IP_ADDR								(XPAR_NVMEHOSTCONTROLLER_0_BASEADDR)
@@ -67,6 +67,12 @@ typedef struct _DEV_IRQ_REG
 	};
 } DEV_IRQ_REG;
 
+void initialize_bss() {
+	memset((void*)BSS_ADDRESS, 0, BSS_SIZE);
+}
+
+
+
 void dev_irq_init()
 {
 	DEV_IRQ_REG devReg;
@@ -95,34 +101,14 @@ int main()
 	Xil_ICacheDisable();
 	Xil_DCacheDisable();
 
+
 	printf("%lu",(void*)Xil_In32(RESET_FLAG_ADDRESS));
 	printf("\r\n");
 
-	if(Xil_In32(RESET_FLAG_ADDRESS) != 85465)
-
-		{
-			// memset((void*)SPARE_TEXT_ADDRESS, 					0, 		ARIANE_TEXT_SIZE);
-			// memset((void*)SPARE_RODATA_STR1_8_ADDRESS,	0, 		ARIANE_RODATA_STR1_8_SIZE);
-			// memset((void*)SPARE_RODATA_ADDRESS, 				0, 		ARIANE_RODATA_SIZE);
-
-			printf("memset_function done \n");
-
-			// memcpy((void*)SPARE_TEXT_ADDRESS, 					(const void*)ARIANE_TEXT_ADDRESS, 					ARIANE_TEXT_SIZE);
-			// memcpy((void*)SPARE_RODATA_STR1_8_ADDRESS, 	(const void*)ARIANE_RODATA_STR1_8_ADDRESS, 	ARIANE_RODATA_STR1_8_SIZE);
-			// memcpy((void*)SPARE_RODATA_ADDRESS, 				(const void*)ARIANE_RODATA_ADDRESS, 				ARIANE_RODATA_SIZE);
-
-			printf("memcpy_function done \n");
-		}else if(Xil_In32(RESET_FLAG_ADDRESS) == 85465)
-
-		{
-			// memcpy((void*)ARIANE_TEXT_ADDRESS, 					(const void*)SPARE_TEXT_ADDRESS, 								ARIANE_TEXT_SIZE);
-			// memcpy((void*)ARIANE_RODATA_STR1_8_ADDRESS,	(const void*)SPARE_RODATA_STR1_8_ADDRESS, 			ARIANE_RODATA_STR1_8_SIZE);
-			// memcpy((void*)ARIANE_RODATA_ADDRESS,				(const void*)SPARE_RODATA_ADDRESS, 							ARIANE_RODATA_SIZE);
-			// printf("memcpy done \n");
-		}
-
 	printf("-------%lu",(void*)Xil_In32(RESET_FLAG_ADDRESS));
 	printf("\r\n");
+	printf("initializing bss\r\n");
+	initialize_bss();
 
 	usleep(100000);
     Xil_Out32(XSLCR_UNLOCK_ADDR, XSLCR_UNLOCK_CODE);

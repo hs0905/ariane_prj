@@ -119,7 +119,7 @@ module top(
   pcie_rx_n,
   pcie_rx_p,
   pcie_tx_n,
-  pcie_tx_p,
+  pcie_tx_p
 //  io_switch_button
   );
 
@@ -313,6 +313,75 @@ module top(
   wire [15:0]   S_AXI_HP0_aruser;
   wire [15:0]   S_AXI_HP0_awuser;
 
+  ariane_axi::req_t axi_req_o;
+  ariane_axi::resp_t axi_resp_i;
+  logic             HP_AXI_reset;
+  CommandDataPort   commanddataport;
+  StatePort         stateport;
+  axi_lite_output   AXI_LITE_output;    
+  axi_lite_input    AXI_LITE_input;
+
+
+  logic[AXI_LITE_ARG_NUM-1:0][AXI_LITE_WORD_WIDTH-1:0] kernel_engine_arg;
+  logic[AXI_LITE_ARG_NUM-1:0][AXI_LITE_WORD_WIDTH-1:0] kernel_engine_status;	
+
+  logic         kernel_command_reg_new;
+  logic [7:0]   kernel_command_reg;
+  logic [31:0]  counter;
+  logic         Inner_counter_reset_wire;
+  logic         Inner_counter_start_wire;
+  
+
+
+
+  typedef struct {
+    logic         c_valid;
+    logic [31:0]  counter;
+    logic         io_switch_reg;
+  } reg_control;
+
+  reg_control reg_ctrl, reg_ctrl_next;
+    
+
+  always_comb begin
+    reg_ctrl_next = reg_ctrl;
+    
+    //read values for GP1
+    kernel_engine_status[0] = kernel_engine_arg[0];
+    kernel_engine_status[1] = stateport.state0;
+    kernel_engine_status[2] = stateport.state1;
+    kernel_engine_status[3] = stateport.state2;
+    kernel_engine_status[4] = stateport.state3;
+    kernel_engine_status[5] = 0;
+    kernel_engine_status[6] = 0;
+    kernel_engine_status[7] = 0;
+    
+    commanddataport.valid   = 0;
+    commanddataport.command = kernel_engine_arg[1];
+    commanddataport.data0   = kernel_engine_arg[2];
+    commanddataport.data1   = kernel_engine_arg[3];
+    counter                 = kernel_engine_arg[4];
+    if(kernel_command_reg_new) begin
+      reg_ctrl_next.counter = counter;
+      reg_ctrl_next.c_valid = 1;
+    end   
+    if(reg_ctrl.c_valid == 1) begin
+        reg_ctrl_next.counter = reg_ctrl.counter - 1;
+        if(reg_ctrl.counter == 0) begin
+            reg_ctrl_next.c_valid = 0;
+            commanddataport.valid = 1;
+        end
+    end
+    reg_ctrl_next.io_switch_reg = (io_switch );
+  end
+
+  always_ff@(posedge user_clk) begin
+    reg_ctrl <= reg_ctrl_next;
+  end
+
+
+
+
   OpenSSD2_wrapper OpenSSD2_wrapper_i
   (
     .DDR_addr         (DDR_addr),
@@ -492,13 +561,47 @@ module top(
     .user_rstn        (user_rstn),
     .IRQ_F2P          (IRQ_F2P)
   );
-  ariane_axi::req_t axi_req_o;
-  ariane_axi::resp_t axi_resp_i;
-  logic             HP_AXI_reset;
-  CommandDataPort   commanddataport;
-  StatePort         stateport;
-  axi_lite_output   AXI_LITE_output;    
-  axi_lite_input    AXI_LITE_input;
+
+  ariane ariane (
+      .clk_i            (user_clk),
+      .rst_ni           (user_rstn),
+      .io_switch        (reg_ctrl.io_switch_reg),
+      .boot_addr_i      (32'h0020_0000),  
+      .hart_id_i        (0),              
+      // Interrupt inputs
+      .irq_i            ({1'b0,IRQ_F2P}), 
+      .ipi_i            (0),              
+      .time_irq_i       (0),              
+      .debug_req_i      (0),              
+      .axi_req_o        (axi_req_o),
+      .axi_resp_i       (axi_resp_i),
+      .stateport        (stateport),
+      .commanddataport  (commanddataport)
+  );
+
+  AXI_reg_intf axi_reg_intf (
+  .clk                    (user_clk),
+  .rstn                   (user_rstn),
+
+  .AXI_LITE_output        (AXI_LITE_output),
+  .AXI_LITE_input         (AXI_LITE_input),
+
+  .kernel_command         (kernel_command_reg),
+  .kernel_command_new     (kernel_command_reg_new),
+  .kernel_engine_arg      (kernel_engine_arg),
+  .kernel_engine_status   (kernel_engine_status),
+  .Inner_counter_reset    (Inner_counter_reset_wire),
+  .Inner_counter_start    (Inner_counter_start_wire)
+  );
+
+  auto_reset_timer auto_reset_timer(
+    .clk                (user_clk),
+    .rstn               (user_rstn), // logic ?? ??
+    .Inner_counter_reset(Inner_counter_reset_wire),
+    .Inner_counter_start(Inner_counter_start_wire),
+    .System_reset       (io_switch)
+  );
+
     
   assign S_AXI_HP0_araddr    =  axi_req_o.ar.addr         ;
   assign S_AXI_HP0_arburst   =  axi_req_o.ar.burst        ;
@@ -569,100 +672,7 @@ module top(
 
 
 
-  ariane ariane (
-      .clk_i            (user_clk),
-      .rst_ni           (user_rstn),
-      .io_switch        (reg_ctrl.io_switch_reg),
-      .boot_addr_i      (32'h0020_0000),  
-      .hart_id_i        (0),              
-      // Interrupt inputs
-      .irq_i            ({1'b0,IRQ_F2P}), 
-      .ipi_i            (0),              
-      .time_irq_i       (0),              
-      .debug_req_i      (0),              
-      .axi_req_o        (axi_req_o),
-      .axi_resp_i       (axi_resp_i),
-      .stateport        (stateport),
-      .commanddataport  (commanddataport)
-  );
 
-  logic[AXI_LITE_ARG_NUM-1:0][AXI_LITE_WORD_WIDTH-1:0] kernel_engine_arg;
-  logic[AXI_LITE_ARG_NUM-1:0][AXI_LITE_WORD_WIDTH-1:0] kernel_engine_status;	
-
-  logic         kernel_command_reg_new;
-  logic [7:0]   kernel_command_reg;
-  logic [31:0]  counter;
-  logic         Inner_counter_reset_wire;
-  logic         Inner_counter_start_wire;
-  
-
-  AXI_reg_intf axi_reg_intf (
-  .clk                    (user_clk),
-  .rstn                   (user_rstn),
-
-  .AXI_LITE_output        (AXI_LITE_output),
-  .AXI_LITE_input         (AXI_LITE_input),
-
-  .kernel_command         (kernel_command_reg),
-  .kernel_command_new     (kernel_command_reg_new),
-  .kernel_engine_arg      (kernel_engine_arg),
-  .kernel_engine_status   (kernel_engine_status),
-  .Inner_counter_reset    (Inner_counter_reset_wire),
-  .Inner_counter_start    (Inner_counter_start_wire)
-  );
-
-  typedef struct {
-    logic         c_valid;
-    logic [31:0]  counter;
-    logic         io_switch_reg;
-  } reg_control;
-
-  reg_control reg_ctrl, reg_ctrl_next;
-    
-
-  always_comb begin
-    reg_ctrl_next = reg_ctrl;
-    
-    //read values for GP1
-    kernel_engine_status[0] = kernel_engine_arg[0];
-    kernel_engine_status[1] = stateport.state0;
-    kernel_engine_status[2] = stateport.state1;
-    kernel_engine_status[3] = stateport.state2;
-    kernel_engine_status[4] = stateport.state3;
-    kernel_engine_status[5] = 0;
-    kernel_engine_status[6] = 0;
-    kernel_engine_status[7] = 0;
-    
-    commanddataport.valid   = 0;
-    commanddataport.command = kernel_engine_arg[1];
-    commanddataport.data0   = kernel_engine_arg[2];
-    commanddataport.data1   = kernel_engine_arg[3];
-    counter                 = kernel_engine_arg[4];
-    if(kernel_command_reg_new) begin
-      reg_ctrl_next.counter = counter;
-      reg_ctrl_next.c_valid = 1;
-    end   
-    if(reg_ctrl.c_valid == 1) begin
-        reg_ctrl_next.counter = reg_ctrl.counter - 1;
-        if(reg_ctrl.counter == 0) begin
-            reg_ctrl_next.c_valid = 0;
-            commanddataport.valid = 1;
-        end
-    end
-    reg_ctrl_next.io_switch_reg = (io_switch );
-  end
-
-  always @( posedge user_clk) begin
-      reg_ctrl <= reg_ctrl_next;
-  end
-
-  auto_reset_timer auto_reset_timer(
-    .clk                (user_clk),
-    .rstn               (user_rstn), // logic ?? ??
-    .Inner_counter_reset(Inner_counter_reset_wire),
-    .Inner_counter_start(Inner_counter_start_wire),
-    .System_reset       (io_switch)
-  );
 
 
 endmodule

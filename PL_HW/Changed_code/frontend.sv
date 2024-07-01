@@ -406,7 +406,8 @@ module frontend import ariane_pkg::*; #(
     .clk(clk_i),
     .probe0(npc_q),
     .probe1(npc_d),
-    .probe2(rst_ni)
+    .probe2(rst_ni),
+    .probe3(boot_addr_i)
   ); // sdk에서 zynq ps를 초기화 할때, program counter가 원하는 값을 찍는지 확인하기 위함.
 
     // pragma translate_off
